@@ -79,8 +79,9 @@ exports.login = (req, res) => {
 exports.withDrawMoney = (req, res) => {
     const token = req.header('Authorization').split(' ')[1];
     const data = jwt.verify(token, env.token_secret);
+    const amountrRequested = req.body.amountRequested
 
-    User.findOne({ where: { id: data.id } })
+    User.findOne({ where: { id: data.userId } })
         .then(user => {
             if (!user) {
                 return res.status(401).json({
@@ -88,6 +89,52 @@ exports.withDrawMoney = (req, res) => {
                     message: 'token expired'
                 })
             }
+
+            bcrypt.compare(req.body.pin.toString(), user.dataValues.pin)
+                .then(valid => {
+                    console.log('valid ', valid);
+                    if (!valid) {
+                        return res.status(401).json({
+                            status: false,
+                            message: 'Password incorrect'
+                        })
+                    }
+
+                    if (amountrRequested > user.dataValues.amount) {
+                        return res.status(401).json({
+                            status: false,
+                            message: 'Found insufficient'
+                        })
+                    }
+
+                    user.setDataValue('balance', user.getDataValue('balance') - amountrRequested);
+                    user.save()
+                        .then(() => {
+                            Transaction.create({
+                                    id: Date.now(),
+                                    sender_id: user.getDataValue('id'),
+                                    receiver_id: user.getDataValue('id'),
+                                    transaction_type: 'withdraw',
+                                    transaction_date: new Date().toString(),
+                                    amount: parseFloat(amountrRequested),
+                                    createdAt: null,
+                                    updatedAt: null
+                                })
+                                .then(() => {
+                                    console.log('Withdraw created');
+                                    res.status(200).json({
+                                        status: true,
+                                        message: 'Fund withdraw success'
+                                    })
+                                })
+                                .catch(err => {
+                                    res.status(500).json({
+                                        status: false,
+                                        message: 'Withdraw error' + err
+                                    })
+                                })
+                        })
+                })
         })
 }
 
