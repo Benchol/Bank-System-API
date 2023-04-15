@@ -140,7 +140,59 @@ exports.withDrawMoney = (req, res) => {
 
 
 exports.depositFund = (req, res) => {
+    const token = req.header('Authorization').split(' ')[1];
+    const data = jwt.verify(token, env.token_secret);
+    const amount = req.body.amount
 
+    User.findOne({ where: { id: data.userId } })
+        .then(user => {
+            if (!user) {
+                return res.status(401).json({
+                    status: false,
+                    message: 'token expired'
+                })
+            }
+
+            user.setDataValue('balance', parseFloat(user.getDataValue('balance')) + parseFloat(amount));
+            user.save()
+                .then(() => {
+                    Transaction.create({
+                            id: Date.now(),
+                            sender_id: user.getDataValue('id'),
+                            receiver_id: user.getDataValue('id'),
+                            transaction_type: 'deposit',
+                            transaction_date: new Date().toString(),
+                            amount: parseFloat(amount),
+                            createdAt: null,
+                            updatedAt: null
+                        })
+                        .then(() => {
+                            console.log('Deposit created');
+                            res.status(200).json({
+                                status: true,
+                                message: 'Fund added success'
+                            })
+                        })
+                        .catch(err => {
+                            res.status(500).json({
+                                status: false,
+                                message: 'Deposit error' + err
+                            })
+                        })
+                })
+                .catch(err => {
+                    res.status(500).json({
+                        status: false,
+                        message: 'Updated error ' + err
+                    })
+                })
+        })
+        .catch(err => {
+            res.status(404).json({
+                status: false,
+                message: 'User not found' + err
+            })
+        })
 }
 
 exports.transferMoney = (req, res) => {
