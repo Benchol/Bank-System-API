@@ -21,7 +21,7 @@ exports.register = (req, res) => {
                     name: req.body.name,
                     username: req.body.username,
                     pin: hash,
-                    role: req.body.role ? 'user' : req.body.role,
+                    role: req.body.role ? req.body.role : 'user',
                     balance: req.body.balance,
                     updateAt: null,
                     createdAt: null
