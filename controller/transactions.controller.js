@@ -8,7 +8,6 @@ exports.listMyTransactions = async(req, res) => {
     const token = req.header('Authorization').split(' ')[1];
     const data = jwt.verify(token, env.token_secret);
 
-
     if (data) {
         const transaction_as_sender = await Transactions.findAll({
             where: {
@@ -42,8 +41,8 @@ exports.listMyTransactions = async(req, res) => {
         );
 
         const resultat = transactions.map((element) => {
-            var { pin, createdAt, updatedAt, ...sender } = element.dataValues.senderId.dataValues;
-            var { pin, createdAt, updatedAt, ...receiver } = element.dataValues.receiverId.dataValues;
+            var { pin, createdAt, balance, updatedAt, ...sender } = element.dataValues.senderId.dataValues;
+            var { pin, createdAt, balance, updatedAt, ...receiver } = element.dataValues.receiverId.dataValues;
 
             let temp = {
                 id: element.dataValues.id,
