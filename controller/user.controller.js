@@ -10,7 +10,7 @@ exports.test = () => {
 
 exports.register = (req, res) => {
     console.log("type ", typeof(req.body.pin));
-    bcrypt.hash(req.body.pin, 10, (err, hash) => {
+    bcrypt.hash((req.body.pin), 10, (err, hash) => {
         if (err) {
             console.error(err);
         } else {
@@ -22,7 +22,7 @@ exports.register = (req, res) => {
                     username: req.body.username,
                     pin: hash,
                     role: req.body.role ? req.body.role : 'user',
-                    balance: req.body.balance,
+                    balance: req.body.balance ? req.body.balance : 0,
                     updateAt: null,
                     createdAt: null
                 })
@@ -54,7 +54,7 @@ exports.login = (req, res) => {
                 })
             }
             console.log(typeof(req.body.pin), (user.dataValues.pin));
-            bcrypt.compare(req.body.pin.toString(), user.dataValues.pin)
+            bcrypt.compare(req.body.pin, user.dataValues.pin)
                 .then(valid => {
                     console.log('valid ', valid);
                     if (!valid) {
@@ -170,7 +170,8 @@ exports.depositFund = (req, res) => {
                             console.log('Deposit created');
                             res.status(200).json({
                                 status: true,
-                                message: 'Fund added success'
+                                message: 'Fund added success',
+                                data: user
                             })
                         })
                         .catch(err => {
@@ -200,6 +201,7 @@ exports.transferMoney = (req, res) => {
     const data = jwt.verify(token, env.token_secret);
     const amount = req.body.amount
 
+
     User.findOne({ where: { id: data.userId } })
         .then(user => {
             if (!user) {
@@ -215,7 +217,8 @@ exports.transferMoney = (req, res) => {
                 })
             }
 
-            User.findOne({ where: { id: req.body.receiver_id } })
+            // console.log('Helllloo', req.body.accountNumber);
+            User.findOne({ where: { id: req.body.accountNumber } })
                 .then((receiver) => {
                     if (!receiver) {
                         return res.status(401).json({
